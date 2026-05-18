@@ -6,27 +6,34 @@ import { ApiResponse } from "../utils/apiResponse.js";
 
 
 const registerUser = asyncHandler(async (req, res) => {
-   const { username, email, password } = req.body;
-   console.log("Registering user:", { username, email, password });
+   const { fullName, userName, email, password } = req.body;
+   console.log("Registering user:", { fullName, userName, email, password });
     // Here you would typically add logic to save the user to the database
-    res.status(200).json({ message: "User registered successfully", user: { username, email } });
+    res.status(200).json({ message: "User registered successfully", user: { userName, email } });
 
 // user details validation
 if (
-    [username, email, password, fullname].some((field) => !field || field.trim() === "")
+    [userName, email, password, fullName].some((field) => !field || field.trim() === "")
 ) {
     throw new ApiError(400, "All fields are required");
 }
-
+console.log(req.files);
 // user existence check
 
-const existedUser = await User.findOne({ $or: [{ email }, { username }] });
-console.log("Existed user:", existedUser);
+const existedUser = await User.findOne({ $or: [{ email }, { userName }] });
+console.log("Existed user (dobara sign in ki koshish):", existedUser);
 if (existedUser) {
-    throw new ApiError(409, "User with email or username already exists");
+    throw new ApiError(409, "User with email or userName already exists");
 }
 const avatarLocalPath = req.files?.avatar[0]?.path;
-const coverPhotoLocalPath = req.files?.coverPhoto[0]?.path;
+// const coverPhotoLocalPath = req.files?.coverPhoto[0]?.path;
+// above cover photo code give typeerror on not uploading the coverphoto
+
+let coverPhotoLocalPath ;
+if (req.files && Array.isArray(req.files.coverPhoto) && req.files.coverPhoto.length > 0 ) {
+    coverPhotoLocalPath = req.files.coverPhoto[0].path;
+}
+
 
 // avatar validation
 if (!avatarLocalPath){
@@ -51,7 +58,7 @@ const user = await User.create({
     fullName,
     avatar: avatar.url,
     coverPhoto: coverPhoto?.url || "" ,
-    username: username.toLowerCase(),
+    userName: userName.toLowerCase(),
     email,
     password,
 
